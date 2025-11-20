@@ -1,11 +1,26 @@
-[build]
-  publish = "."
-  command = ""
+import { Groq } from "groq-sdk";
 
-[functions]
-  node_bundler = "esbuild"
+export default async (req, context) => {
+  try {
+    const body = await req.json();
+    const userMessage = body.message ?? "Hello";
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    });
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: "user", content: userMessage }
+      ],
+      model: "llama-3.1-8b-instant"
+    });
+
+    return Response.json({
+      reply: chatCompletion.choices[0].message.content
+    });
+
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+};
